@@ -1,0 +1,30 @@
+void
+Scheduler::SwitchTo(Thread *nextThread) {
+    Thread *oldThread = g_current_thread;
+
+    g_current_thread->CheckOverflow(); // Vérifie si le thread précédent a débordé sa pile
+
+    DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
+          g_current_thread->GetName(), nextThread->GetName(), g_stats->getTotalTicks());
+
+    // Si le thread précédent a terminé son exécution, supprime-le
+    if (oldThread->HasFinished()) {
+        delete oldThread;
+    }
+
+    // Modifier le thread courant
+    g_current_thread = nextThread;
+
+    // Sauvegarde le contexte du thread précédent
+    oldThread->SaveProcessorState();
+    oldThread->SaveSimulatorState();
+
+    // Si les threads sont différents, effectuer la commutation de contexte
+    if (oldThread != g_current_thread) {
+        // Restaurer l'état du thread suivant
+        nextThread->RestoreProcessorState();
+        nextThread->RestoreSimulatorState();
+    }
+
+    DEBUG('t', (char *)"Now in thread \"%s\" time %llu\n", g_current_thread->GetName(), g_stats->getTotalTicks());
+}

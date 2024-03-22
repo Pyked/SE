@@ -1,0 +1,205 @@
+Il Faut Initialiser au plus vite l'attribut Process
+
+Liste des appels systèmes dans sys.s:
+Halt
+Exit
+Exec
+Join
+Create
+Open
+Read
+Write
+Seek
+Close
+FSList
+newThread
+Remove
+Yield
+PError
+P
+V
+SemCreate
+SemDestroy
+SysTime
+LockCreate
+LockDestroy
+LockAcquire
+LockRelease
+CondCreate
+CondDestroy
+CondWait
+CondSignal
+CondBroadcast
+TtySend
+TtyReceive
+Mkdir
+Rmdir
+Mmap
+Debug
+
+
+Liste des appels systèmes dans exception.cc:
+SC_HALT
+SC_SYS_TIME
+SC_EXIT
+SC_EXEC
+SC_NEW_THREAD
+SC_JOIN
+SC_YIELD
+SC_PERROR
+SC_CREATE
+SC_OPEN
+SC_READ
+SC_WRITE
+SC_SEEK
+SC_CLOSE
+SC_REMOVE
+SC_MKDIR
+SC_RMDIR
+SC_FSLIST
+SC_TTY_SEND
+SC_TTY_RECEIVE
+SC_MMAP
+SC_DEBUG
+
+Liste des appels à ajouter dans exception.cc:
+SemCreate
+SemDestroy
+LockCreate
+LockDestroy
+LockAcquire
+LockRelease
+CondCreate
+CondDestroy
+CondWait
+CondSignal
+CondBroadcast
+P
+V
+
+
+Prochain code à copier:
+
+
+#ifndef ETUDIANTS_TP
+<le vieux code que vous allez changer pendant le TP>
+#endif
+#ifdef ETUDIANTS_TP
+<le beau code que vous voulez ajouter a la place>
+#endif
+
+
+
+
+#ifndef ETUDIANTS_TP
+void
+Scheduler::SwitchTo (Thread *nextThread)
+{
+Thread *oldThread = g_current_thread;
+
+    g_current_thread->CheckOverflow();	 // check if the old thread
+				 // had an undetected stack overflow
+
+    DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
+	  g_current_thread->GetName(), nextThread->GetName(),g_stats->getTotalTicks());
+    
+    // Modify the current thread
+    g_current_thread = nextThread;
+
+    // Save the context of old thread
+    oldThread->SaveProcessorState();
+    oldThread->SaveSimulatorState();
+
+    // Do the context switch if the two threads are different
+    if (oldThread!=g_current_thread) {
+    	// Restore the state of the operating system from its
+    	// kernelContext structure such that it goes on executing when
+    	// it was last interrupted
+    	nextThread->RestoreProcessorState();
+	nextThread->RestoreSimulatorState();
+    }
+
+    DEBUG('t', (char *)"Now in thread \"%s\" time %llu\n", g_current_thread->GetName(),g_stats->getTotalTicks());
+
+    // If the old thread gave up the processor because it was finishing,
+
+    // we need to delete its carcass.  Note we cannot delete the thread
+
+    // before now (for example, in Thread::Finish()), because up to this
+
+    // point, we were still running on the old thread's stack!
+
+  printf("**** Warning: thread actual deletion not implemented yet\n");
+
+
+}
+#endif
+#ifdef ETUDIANTS_TP
+void
+Scheduler::SwitchTo(Thread *nextThread) {
+    Thread *oldThread = g_current_thread;
+
+    g_current_thread->CheckOverflow(); // Vérifie si le thread précédent a débordé sa pile
+
+    DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
+          g_current_thread->GetName(), nextThread->GetName(), g_stats->getTotalTicks());
+
+    // Si le thread précédent a terminé son exécution, supprime-le
+    if (oldThread->HasFinished()) {
+        delete oldThread;
+    }
+
+    // Modifier le thread courant
+    g_current_thread = nextThread;
+
+    // Sauvegarde le contexte du thread précédent
+    oldThread->SaveProcessorState();
+    oldThread->SaveSimulatorState();
+
+    // Si les threads sont différents, effectuer la commutation de contexte
+    if (oldThread != g_current_thread) {
+        // Restaurer l'état du thread suivant
+        nextThread->RestoreProcessorState();
+        nextThread->RestoreSimulatorState();
+    }
+
+    DEBUG('t', (char *)"Now in thread \"%s\" time %llu\n", g_current_thread->GetName(), g_stats->getTotalTicks());
+}
+
+#endif
+
+
+void Scheduler::SwitchTo(Thread *nextThread) {
+    Thread *oldThread = g_current_thread;
+
+    // Vérifier si l'ancien thread a eu un dépassement de pile non détecté
+    g_current_thread->CheckOverflow();
+
+    DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
+          g_current_thread->GetName(), nextThread->GetName(), g_stats->getTotalTicks());
+    
+    // Modifier le thread courant
+    g_current_thread = nextThread;
+
+    // Sauvegarder le contexte du processeur du thread précédent
+    oldThread->SaveProcessorState();
+    oldThread->SaveSimulatorState();
+
+    // Effectuer la commutation de contexte si les deux threads sont différents
+    if (oldThread != g_current_thread) {
+        // Restaurer l'état du processeur du thread suivant
+        nextThread->RestoreProcessorState();
+        nextThread->RestoreSimulatorState();
+    }
+
+    DEBUG('t', (char *)"Now in thread \"%s\" time %llu\n", g_current_thread->GetName(), g_stats->getTotalTicks());
+}
+
+Thread *Scheduler::FindNextToRun() {
+    Thread *thread = (Thread*)readyList->Remove();
+    return thread;
+}
+
+
+
+Utiliser des messages de DEBUG et des ASSERT
