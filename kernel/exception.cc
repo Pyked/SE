@@ -37,7 +37,7 @@
 #include "drivers/drvConsole.h"
 #include "filesys/oftable.h"
 #include "vm/pagefaultmanager.h"
-#define ETUDIANS_TP
+#define ETUDIANTS_TP
 
 //----------------------------------------------------------------------
 // GetLengthParam
@@ -653,7 +653,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
     case SC_DEBUG:{
       // Map a file in memory
       DEBUG('e', (char*)"Nachos: debug system call.\n");
-      printf("Debug system call: parameter %llx\n",g_machine->ReadIntRegister(10));
+      printf("Debug system call: parameter %lx\n",g_machine->ReadIntRegister(10));
       break;
     }
 
@@ -662,19 +662,39 @@ case SC_SEM_CREATE: {
     // The SemCreate system call
     // Create a semaphore
     DEBUG('e', (char*)"Synchronization: SemCreate call.\n");
-    int initialValue = g_machine->ReadIntRegister(10);
-    int sid = g_synch_manager->SemCreate(initialValue);
+    Semaphore *ptSemaphore;
+    int name_addr;
+    int32_t count;
+    int err = NO_ERROR;
+    // Get the address of the string for the name of the thread
+    name_addr = g_machine->ReadIntRegister(10);
+    // Get the value of the count
+    count = g_machine->ReadIntRegister(11);
+    // Build the name of the Semaphore
+    int size = GetLengthParam(name_addr);
+    char sem_name[size];
+    GetStringParam(name_addr, sem_name, size);
+    // Create the semaphore
+    ptSemaphore = new Semaphore(sem_name, count);
+    int64_t tid = g_object_addrs->AddObject(ptSemaphore);
+    g_machine->WriteIntRegister(10, tid);
+    break;
+
+    /*
+    int64_t initialValue = g_machine->ReadIntRegister(10);
+    long sid = SemCreate((char *) "Sem", initialValue);
     g_machine->WriteIntRegister(10, sid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
+    */
 }
 
 case SC_SEM_DESTROY: {
     // The SemDestroy system call
     // Destroy a semaphore
     DEBUG('e', (char*)"Synchronization: SemDestroy call.\n");
-    int sid = g_machine->ReadIntRegister(10);
-    int result = g_synch_manager->SemDestroy(sid);
+    int64_t sid = g_machine->ReadIntRegister(10);
+    t_error result = SemDestroy(sid);
     g_machine->WriteIntRegister(10, result);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
@@ -684,7 +704,7 @@ case SC_LOCK_CREATE: {
     // The LockCreate system call
     // Create a lock
     DEBUG('e', (char*)"Synchronization: LockCreate call.\n");
-    int lid = g_synch_manager->LockCreate();
+    int lid = LockCreate((char *) "");
     g_machine->WriteIntRegister(10, lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
@@ -695,7 +715,7 @@ case SC_LOCK_DESTROY: {
     // Destroy a lock
     DEBUG('e', (char*)"Synchronization: LockDestroy call.\n");
     int lid = g_machine->ReadIntRegister(10);
-    int result = g_synch_manager->LockDestroy(lid);
+    int result = LockDestroy(lid);
     g_machine->WriteIntRegister(10, result);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
@@ -706,7 +726,7 @@ case SC_LOCK_ACQUIRE: {
     // Acquire a lock
     DEBUG('e', (char*)"Synchronization: LockAcquire call.\n");
     int lid = g_machine->ReadIntRegister(10);
-    g_synch_manager->LockAcquire(lid);
+    LockAcquire(lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -716,7 +736,7 @@ case SC_LOCK_RELEASE: {
     // Release a lock
     DEBUG('e', (char*)"Synchronization: LockRelease call.\n");
     int lid = g_machine->ReadIntRegister(10);
-    g_synch_manager->LockRelease(lid);
+    LockRelease(lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -725,7 +745,7 @@ case SC_COND_CREATE: {
     // The CondCreate system call
     // Create a condition variable
     DEBUG('e', (char*)"Synchronization: CondCreate call.\n");
-    int cid = g_synch_manager->CondCreate();
+    int cid = CondCreate((char *) "");
     g_machine->WriteIntRegister(10, cid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
@@ -736,7 +756,7 @@ case SC_COND_DESTROY: {
     // Destroy a condition variable
     DEBUG('e', (char*)"Synchronization: CondDestroy call.\n");
     int cid = g_machine->ReadIntRegister(10);
-    int result = g_synch_manager->CondDestroy(cid);
+    int result = CondDestroy(cid);
     g_machine->WriteIntRegister(10, result);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
@@ -748,7 +768,8 @@ case SC_COND_WAIT: {
     DEBUG('e', (char*)"Synchronization: CondWait call.\n");
     int cid = g_machine->ReadIntRegister(10);
     int lid = g_machine->ReadIntRegister(11);
-    g_synch_manager->CondWait(cid, lid);
+    CondWait(cid);
+    CondWait(lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -759,7 +780,8 @@ case SC_COND_SIGNAL: {
     DEBUG('e', (char*)"Synchronization: CondSignal call.\n");
     int cid = g_machine->ReadIntRegister(10);
     int lid = g_machine->ReadIntRegister(11);
-    g_synch_manager->CondSignal(cid, lid);
+    CondSignal(cid);
+    CondSignal(lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -770,7 +792,8 @@ case SC_COND_BROADCAST: {
     DEBUG('e', (char*)"Synchronization: CondBroadcast call.\n");
     int cid = g_machine->ReadIntRegister(10);
     int lid = g_machine->ReadIntRegister(11);
-    g_synch_manager->CondBroadcast(cid, lid);
+    CondSignal(cid);
+    CondSignal(lid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -780,7 +803,7 @@ case SC_P: {
     // Perform the P operation on a semaphore
     DEBUG('e', (char*)"Synchronization: P call.\n");
     int sid = g_machine->ReadIntRegister(10);
-    g_synch_manager->SemWait(sid);
+    P(sid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
@@ -790,7 +813,7 @@ case SC_V: {
     // Perform the V operation on a semaphore
     DEBUG('e', (char*)"Synchronization: V call.\n");
     int sid = g_machine->ReadIntRegister(10);
-    g_synch_manager->SemPost(sid);
+    V(sid);
     g_syscall_error->SetMsg((char*)"", NO_ERROR);
     break;
 }
