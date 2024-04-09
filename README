@@ -62,3 +62,10 @@ on demand (for teachers only :-)
 Bugs, questions, suggestions for improvements:
 ---------------------------------------------
 mail puaut@irisa.fr
+
+Si vous rencontrez cette erreur lorsque vous faites `make`, essayez `make clean`
+pour supprimer les fichiers temporaires et relancez `make` pour refaire le build.
+
+- $ make
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C kernel/ archive.a
+make: *** [kernel/archive.a] Error 2

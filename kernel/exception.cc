@@ -658,164 +658,255 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
     }
 
 #ifdef ETUDIANTS_TP
-case SC_SEM_CREATE: {
-    // The SemCreate system call
-    // Create a semaphore
-    DEBUG('e', (char*)"Synchronization: SemCreate call.\n");
-    Semaphore *ptSemaphore;
-    int name_addr;
-    int32_t count;
-    int err = NO_ERROR;
-    // Get the address of the string for the name of the thread
-    name_addr = g_machine->ReadIntRegister(10);
-    // Get the value of the count
-    count = g_machine->ReadIntRegister(11);
-    // Build the name of the Semaphore
-    int size = GetLengthParam(name_addr);
-    char sem_name[size];
-    GetStringParam(name_addr, sem_name, size);
-    // Create the semaphore
-    ptSemaphore = new Semaphore(sem_name, count);
-    int64_t tid = g_object_addrs->AddObject(ptSemaphore);
-    g_machine->WriteIntRegister(10, tid);
-    break;
 
-    /*
-    int64_t initialValue = g_machine->ReadIntRegister(10);
-    long sid = SemCreate((char *) "Sem", initialValue);
-    g_machine->WriteIntRegister(10, sid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-    */
+case SC_SEM_CREATE: {
+  // The SemCreate system call
+  // Create a semaphore
+  DEBUG('e', (char*)"Synchronization: SemCreate call.\n");
+  Semaphore *ptSemaphore;
+  int name_addr;
+  int32_t count;
+  //int err = NO_ERROR;
+  // Get the address of the string for the name of the thread
+  name_addr = g_machine->ReadIntRegister(10);
+  // Get the value of the count
+  count = g_machine->ReadIntRegister(11);
+  // Build the name of the Semaphore
+  int size = GetLengthParam(name_addr);
+  char sem_name[size];
+  GetStringParam(name_addr, sem_name, size);
+  // Create the semaphore
+  ptSemaphore = new Semaphore(sem_name, count);
+  int64_t sid = g_object_addrs->AddObject(ptSemaphore);
+  g_machine->WriteIntRegister(10, sid);
+  g_syscall_error->SetMsg((char*)"Semaphore created", NO_ERROR);
+  break;
+
 }
 
 case SC_SEM_DESTROY: {
-    // The SemDestroy system call
-    // Destroy a semaphore
-    DEBUG('e', (char*)"Synchronization: SemDestroy call.\n");
-    int64_t sid = g_machine->ReadIntRegister(10);
-    t_error result = SemDestroy(sid);
-    g_machine->WriteIntRegister(10, result);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_LOCK_CREATE: {
-    // The LockCreate system call
-    // Create a lock
-    DEBUG('e', (char*)"Synchronization: LockCreate call.\n");
-    int lid = LockCreate((char *) "");
-    g_machine->WriteIntRegister(10, lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_LOCK_DESTROY: {
-    // The LockDestroy system call
-    // Destroy a lock
-    DEBUG('e', (char*)"Synchronization: LockDestroy call.\n");
-    int lid = g_machine->ReadIntRegister(10);
-    int result = LockDestroy(lid);
-    g_machine->WriteIntRegister(10, result);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_LOCK_ACQUIRE: {
-    // The LockAcquire system call
-    // Acquire a lock
-    DEBUG('e', (char*)"Synchronization: LockAcquire call.\n");
-    int lid = g_machine->ReadIntRegister(10);
-    LockAcquire(lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_LOCK_RELEASE: {
-    // The LockRelease system call
-    // Release a lock
-    DEBUG('e', (char*)"Synchronization: LockRelease call.\n");
-    int lid = g_machine->ReadIntRegister(10);
-    LockRelease(lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_COND_CREATE: {
-    // The CondCreate system call
-    // Create a condition variable
-    DEBUG('e', (char*)"Synchronization: CondCreate call.\n");
-    int cid = CondCreate((char *) "");
-    g_machine->WriteIntRegister(10, cid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_COND_DESTROY: {
-    // The CondDestroy system call
-    // Destroy a condition variable
-    DEBUG('e', (char*)"Synchronization: CondDestroy call.\n");
-    int cid = g_machine->ReadIntRegister(10);
-    int result = CondDestroy(cid);
-    g_machine->WriteIntRegister(10, result);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_COND_WAIT: {
-    // The CondWait system call
-    // Wait on a condition variable
-    DEBUG('e', (char*)"Synchronization: CondWait call.\n");
-    int cid = g_machine->ReadIntRegister(10);
-    int lid = g_machine->ReadIntRegister(11);
-    CondWait(cid);
-    CondWait(lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_COND_SIGNAL: {
-    // The CondSignal system call
-    // Signal a condition variable
-    DEBUG('e', (char*)"Synchronization: CondSignal call.\n");
-    int cid = g_machine->ReadIntRegister(10);
-    int lid = g_machine->ReadIntRegister(11);
-    CondSignal(cid);
-    CondSignal(lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
-}
-
-case SC_COND_BROADCAST: {
-    // The CondBroadcast system call
-    // Broadcast on a condition variable
-    DEBUG('e', (char*)"Synchronization: CondBroadcast call.\n");
-    int cid = g_machine->ReadIntRegister(10);
-    int lid = g_machine->ReadIntRegister(11);
-    CondSignal(cid);
-    CondSignal(lid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
+  // The SemDestroy system call
+  // Destroy a semaphore
+  DEBUG('e', (char*)"Synchronization: SemDestroy call.\n");
+  int32_t sid;
+  Semaphore *ptSemaphore;
+  sid = g_machine->ReadIntRegister(10);
+  ptSemaphore = (Semaphore *)g_object_addrs->SearchObject(sid);
+  if (ptSemaphore != nullptr) {
+    delete ptSemaphore; // Destruction du sémaphore
+    g_object_addrs->RemoveObject(sid); // Suppression de l'objet de la table d'objets
+    g_syscall_error->SetMsg((char*)"Semaphore destroyed", NO_ERROR);
+  } else {
+    // Le sémaphore avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Semaphore does not exist", INVALID_SEMAPHORE_ID);
+  }
+  break;
+  
 }
 
 case SC_P: {
-    // The P system call
-    // Perform the P operation on a semaphore
-    DEBUG('e', (char*)"Synchronization: P call.\n");
-    int sid = g_machine->ReadIntRegister(10);
-    P(sid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
+  // The P system call
+  // Perform the P operation on a semaphore
+  DEBUG('e', (char*)"Synchronization: P call.\n");
+  int32_t sid;
+  Semaphore *ptSemaphore;
+  sid = g_machine->ReadIntRegister(10);
+  ptSemaphore = (Semaphore *)g_object_addrs->SearchObject(sid);
+  if (ptSemaphore != nullptr) {
+    ptSemaphore->P();
+    g_syscall_error->SetMsg((char*)"Operation P done on semaphore", NO_ERROR);
+  } else {
+    // Le sémaphore avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Semaphore does not exist", INVALID_SEMAPHORE_ID);
+  }
+  break;
 }
 
 case SC_V: {
-    // The V system call
-    // Perform the V operation on a semaphore
-    DEBUG('e', (char*)"Synchronization: V call.\n");
-    int sid = g_machine->ReadIntRegister(10);
-    V(sid);
-    g_syscall_error->SetMsg((char*)"", NO_ERROR);
-    break;
+  // The V system call
+  // Perform the V operation on a semaphore
+  DEBUG('e', (char*)"Synchronization: V call.\n");
+  int32_t sid;
+  Semaphore *ptSemaphore;
+  sid = g_machine->ReadIntRegister(10);
+  ptSemaphore = (Semaphore *)g_object_addrs->SearchObject(sid);
+  if (ptSemaphore != nullptr) {
+    ptSemaphore->V();
+    g_syscall_error->SetMsg((char*)"Operation V done on semaphore", NO_ERROR);
+  } else {
+    // Le sémaphore avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Semaphore does not exist", INVALID_SEMAPHORE_ID);
+  }
+  break;
+}
+
+case SC_LOCK_CREATE: {
+  // The LockCreate system call
+  // Create a lock
+  DEBUG('e', (char*)"Synchronization: LockCreate call.\n");
+  Lock *ptLock;
+  int name_addr;
+  name_addr = g_machine->ReadIntRegister(10);
+  int size = GetLengthParam(name_addr);
+  char lock_name[size];
+  GetStringParam(name_addr, lock_name, size);
+  ptLock = new Lock(lock_name);
+  int64_t lid = g_object_addrs->AddObject(ptLock);
+  g_machine->WriteIntRegister(10, lid);
+  g_syscall_error->SetMsg((char*)"Lock created", NO_ERROR);
+  break;
+
+}
+
+case SC_LOCK_DESTROY: {
+  // The LockDestroy system call
+  // Destroy a lock
+  DEBUG('e', (char*)"Synchronization: LockDestroy call.\n");
+  int32_t lid;
+  Lock *ptLock;
+  lid = g_machine->ReadIntRegister(10);
+  ptLock = (Lock *)g_object_addrs->SearchObject(lid);
+  if (ptLock != nullptr) {
+    delete ptLock; // Destruction du lock
+    g_object_addrs->RemoveObject(lid); // Suppression de l'objet de la table d'objets
+    g_syscall_error->SetMsg((char*)"Lock destroyed", NO_ERROR);
+  } else {
+    // Le lock avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Lock does not exist", INVALID_LOCK_ID);
+  }
+  break;
+  
+}
+
+case SC_LOCK_ACQUIRE: {
+  // The LockAcquire system call
+  // Acquire a lock
+  DEBUG('e', (char*)"Synchronization: LockAcquire call.\n");
+  int32_t lid;
+  Lock *ptLock;
+  lid = g_machine->ReadIntRegister(10);
+  ptLock = (Lock *)g_object_addrs->SearchObject(lid);
+  if (ptLock != nullptr) {
+    ptLock->Acquire();
+    g_syscall_error->SetMsg((char*)"Lock acquired", NO_ERROR);
+  } else {
+    // Le lock avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Lock does not exist", INVALID_LOCK_ID);
+  }
+  break;
+
+}
+
+case SC_LOCK_RELEASE: {
+  // The LockRelease system call
+  // Release a lock
+  DEBUG('e', (char*)"Synchronization: LockRelease call.\n");
+  int32_t lid;
+  Lock *ptLock;
+  lid = g_machine->ReadIntRegister(10);
+  ptLock = (Lock *)g_object_addrs->SearchObject(lid);
+  if (ptLock != nullptr) {
+    ptLock->Release();
+    g_syscall_error->SetMsg((char*)"Lock released", NO_ERROR);
+  } else {
+    // Le lock avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Lock does not exist", INVALID_LOCK_ID);
+  }
+  break;
+}
+
+case SC_COND_CREATE: {
+  // The CondCreate system call
+  // Create a condition variable
+  DEBUG('e', (char*)"Synchronization: CondCreate call.\n");
+  Condition *ptCond;
+  int name_addr;
+  name_addr = g_machine->ReadIntRegister(10);
+  int size = GetLengthParam(name_addr);
+  char cond_name[size];
+  GetStringParam(name_addr, cond_name, size);
+  ptCond = new Condition(cond_name);
+  int64_t cid = g_object_addrs->AddObject(ptCond);
+  g_machine->WriteIntRegister(10, cid);
+  g_syscall_error->SetMsg((char*)"Condition created", NO_ERROR);
+  break;
+
+}
+
+case SC_COND_DESTROY: {
+  // The CondDestroy system call
+  // Destroy a condition variable
+  DEBUG('e', (char*)"Synchronization: CondDestroy call.\n");
+  int32_t cid;
+  Condition *ptCond;
+  cid = g_machine->ReadIntRegister(10);
+  ptCond = (Condition *)g_object_addrs->SearchObject(cid);
+  if (ptCond != nullptr) {
+    delete ptCond; // Destruction de la condition
+    g_object_addrs->RemoveObject(cid); // Suppression de l'objet de la table d'objets
+    g_syscall_error->SetMsg((char*)"Condition destroyed", NO_ERROR);
+  } else {
+    // La condition avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Condition does not exist", INVALID_CONDITION_ID);
+  }
+  break;
+
+}
+
+case SC_COND_WAIT: {
+  // The CondWait system call
+  // Wait on a condition variable
+  DEBUG('e', (char*)"Synchronization: CondWait call.\n");
+  int32_t cid;
+  Condition *ptCond;
+  cid = g_machine->ReadIntRegister(10);
+  ptCond = (Condition *)g_object_addrs->SearchObject(cid);
+  if (ptCond != nullptr) {
+    ptCond->Wait();
+    g_syscall_error->SetMsg((char*)"Condition waited", NO_ERROR);
+  } else {
+    // La condition avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Condition does not exist", INVALID_CONDITION_ID);
+  }
+  break;
+
+}
+
+case SC_COND_SIGNAL: {
+  // The CondSignal system call
+  // Signal a condition variable
+  DEBUG('e', (char*)"Synchronization: CondSignal call.\n");
+  int32_t cid;
+  Condition *ptCond;
+  cid = g_machine->ReadIntRegister(10);
+  ptCond = (Condition *)g_object_addrs->SearchObject(cid);
+  if (ptCond != nullptr) {
+    ptCond->Signal();
+    g_syscall_error->SetMsg((char*)"Condition signaled", NO_ERROR);
+  } else {
+    // La condition avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Condition does not exist", INVALID_CONDITION_ID);
+  }
+  break;
+
+}
+
+case SC_COND_BROADCAST: {
+  // The CondBroadcast system call
+  // Broadcast on a condition variable
+  DEBUG('e', (char*)"Synchronization: CondBroadcast call.\n");
+  int32_t cid;
+  Condition *ptCond;
+  cid = g_machine->ReadIntRegister(10);
+  ptCond = (Condition *)g_object_addrs->SearchObject(cid);
+  if (ptCond != nullptr) {
+    ptCond->Broadcast();
+    g_syscall_error->SetMsg((char*)"Condition broadcasted", NO_ERROR);
+  } else {
+    // La condition avec l'ID spécifié n'existe pas
+    g_syscall_error->SetMsg((char*)"Condition does not exist", INVALID_CONDITION_ID);
+  }
+  break;
 }
 #endif
 	    
