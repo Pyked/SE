@@ -87,7 +87,7 @@ Semaphore::~Semaphore()
 //	when it is called.
 */
 //----------------------------------------------------------------------
-/*#ifndef ETUDIANTS_TP
+#ifndef ETUDIANTS_TP
 void
 Semaphore::P() {
   printf("**** Warning: method Semaphore::P is not implemented yet\n");
@@ -97,7 +97,7 @@ Semaphore::P() {
 }
 #endif
 #ifdef ETUDIANTS_TP
-*/void Semaphore::P() {
+void Semaphore::P() {
     IntStatus oldLevel = g_machine->interrupt->SetStatus(INTERRUPTS_OFF); // Désactiver les interruptions
     while (counter <= 0) {
         waiting_queue->Append((void *)g_current_thread); // Mettre le thread courant en attente
@@ -106,7 +106,8 @@ Semaphore::P() {
     counter--;
     (void) g_machine ->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-//#endif
+#endif
+
 //----------------------------------------------------------------------
 // Semaphore::V
 /*! 	Increment semaphore value, waking up a waiting thread if any.
@@ -115,7 +116,7 @@ Semaphore::P() {
 //	are disabled when it is called.
 */
 //----------------------------------------------------------------------
-/*#ifndef ETUDIANTS_TP
+#ifndef ETUDIANTS_TP
 void
 Semaphore::V() {
    printf("**** Warning: method Semaphore::V is not implemented yet\n");
@@ -125,16 +126,16 @@ Semaphore::V() {
 }
 #endif
 #ifdef ETUDIANTS_TP
-*/void Semaphore::V() {
-    IntStatus oldLevel = g_machine->interrupt->SetStatus(INTERRUPTS_OFF); // Désactiver les interruptions
-    counter++;
-    if (!waiting_queue->IsEmpty()) {
-        Thread *threadToWakeUp = (Thread *)waiting_queue->Remove(); // Retirer un thread de la file d'attente
-        g_scheduler->ReadyToRun(threadToWakeUp); // Mettre le thread de retour dans la file des prêts
-    }
-    (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
+void Semaphore::V() {
+  IntStatus oldLevel = g_machine->interrupt->SetStatus(INTERRUPTS_OFF); // Désactiver les interruptions
+  counter++;
+  if (!waiting_queue->IsEmpty()) {
+    Thread *threadToWakeUp = (Thread *)waiting_queue->Remove(); // Retirer un thread de la file d'attente
+    g_scheduler->ReadyToRun(threadToWakeUp); // Mettre le thread de retour dans la file des prêts
+  }
+  (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-//#endif
+#endif
 
 //----------------------------------------------------------------------
 // Lock::Lock
@@ -177,7 +178,7 @@ Lock::~Lock() {
 //	when it is called.
 */
 //----------------------------------------------------------------------
-/*#ifndef ETUDIANTS_TP
+#ifndef ETUDIANTS_TP
 void Lock::Acquire() {
    printf("**** Warning: method Lock::Acquire is not implemented yet\n");
 
@@ -186,7 +187,7 @@ void Lock::Acquire() {
 }
 #endif
 #ifdef ETUDIANTS_TP
-*/void Lock::Acquire() {
+void Lock::Acquire() {
   IntStatus oldLevel = g_machine->interrupt->SetStatus(INTERRUPTS_OFF); // Désactiver les interruptions
   while (!free) {
     waiting_queue->Append((void *)g_current_thread); // Mettre le thread courant en attente
@@ -196,7 +197,7 @@ void Lock::Acquire() {
   owner = g_current_thread;
   (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-//#endif
+#endif
 
 //----------------------------------------------------------------------
 // Lock::Release
@@ -228,8 +229,8 @@ void Lock::Release() {
   }
   (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-
 #endif
+
 //----------------------------------------------------------------------
 // Lock::isHeldByCurrentThread
 /*! To check if current thread hold the lock
@@ -287,8 +288,8 @@ void Condition::Wait() {
   g_current_thread->Sleep(); // Mettre le thread courant en attente
   (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-
 #endif
+
 //----------------------------------------------------------------------
 // Condition::Signal
 /*! Wake up the first thread of the wait queue (if any). 
@@ -313,8 +314,8 @@ void Condition::Signal() {
   }
   (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }
-
 #endif
+
 //----------------------------------------------------------------------
 // Condition::Broadcast
 /*! Wake up all threads waiting in the waitqueue of the condition

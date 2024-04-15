@@ -145,12 +145,11 @@ Thread *oldThread = g_current_thread;
 #endif
 #ifdef ETUDIANTS_TP
 void
-Scheduler::SwitchTo (Thread *nextThread)
-{
-Thread *oldThread = g_current_thread;
+Scheduler::SwitchTo (Thread *nextThread) {
+    Thread *oldThread = g_current_thread;
 
     g_current_thread->CheckOverflow();	 // check if the old thread
-				 // had an undetected stack overflow
+	// had an undetected stack overflow
 
     DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
 	  g_current_thread->GetName(), nextThread->GetName(),g_stats->getTotalTicks());

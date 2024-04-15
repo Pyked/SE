@@ -111,7 +111,7 @@ Thread::~Thread()
 // \return NO_ERROR on success, an error code on error
 */
 //----------------------------------------------------------------------
-/*#ifndef ETUDIANTS_TP
+#ifndef ETUDIANTS_TP
 int Thread::Start(Process *owner,
 		  int64_t func, int64_t arg)
 {
@@ -121,30 +121,35 @@ int Thread::Start(Process *owner,
   exit(ERROR);
 
 }
-#endif*/
-//#ifdef ETUDIANTS_TP
+#endif
+#ifdef ETUDIANTS_TP
 int Thread::Start(Process *owner, int64_t func, int64_t arg) {
-    ASSERT(process == NULL);
+  DEBUG('t', (char *)"Starting thread \"%s\"\n", name);
 
-    // Associer le thread au processus spécifié
-    process = owner;
-    process->numThreads++;
+  ASSERT(process == NULL);
+  // Associer le thread au processus spécifié
+  IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF);    
+  process = owner;
+  process->numThreads++;
 
-    // Initialiser tous les éléments du thread
-    // Allouer une nouvelle pile utilisateur et une nouvelle pile pour le simulateur RISC-V
-    int8_t * stackBottom = (int8_t *) AllocBoundedArray(SIMULATORSTACKSIZE);
-    InitSimulatorContext(stackBottom, SIMULATORSTACKSIZE);
+  // Initialiser tous les éléments du thread
+  // Allouer une nouvelle pile utilisateur et une nouvelle pile pour le simulateur RISC-V
+  int8_t * stackBottom = (int8_t *) AllocBoundedArray(SIMULATORSTACKSIZE);
+  InitSimulatorContext(stackBottom, SIMULATORSTACKSIZE);
 
-    // Initialiser le contenu du thread (contexte utilisateur et contexte du simulateur)
-    InitThreadContext(func, (int64_t) stackBottom + SIMULATORSTACKSIZE, arg);
+  // Initialiser le contenu du thread (contexte utilisateur et contexte du simulateur)
+  InitThreadContext(func, (int64_t) stackBottom + SIMULATORSTACKSIZE, arg);
 
-    // Marquer le thread comme prêt à être exécuté
-    g_alive->Append(this);
-    g_scheduler->ReadyToRun(this);
+  // Marquer le thread comme prêt à être exécuté
+  g_alive->Append(this);
+  g_scheduler->ReadyToRun(this);
 
-    return NO_ERROR;
+  g_machine->interrupt->SetStatus(oldLevel);
+
+  return NO_ERROR;
 }
-//#endif
+#endif
+
 //----------------------------------------------------------------------
 // Thread::InitThreadContext
 /*!	Set the initial values for the thread contact
@@ -302,14 +307,16 @@ Thread::Finish ()
 #endif
 #ifdef ETUDIANTS_TP
 void Thread::Finish() {
-    DEBUG('t', (char *)"Finishing thread \"%s\"\n", GetName());
-
-    // Marquer le thread comme étant détruit
-    g_thread_to_be_destroyed = this;
-
-    // Oter le thread des différentes structures de données
-    // et le bloquer
-    g_scheduler->SwitchTo(g_scheduler->FindNextToRun());
+  DEBUG('t', (char *)"Finishing thread \"%s\"\n", GetName());
+  // Marquer le thread comme étant détruit et le supprimer des structures de données
+  IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF);    
+  g_thread_to_be_destroyed = this;
+  g_alive->RemoveItem(g_thread_to_be_destroyed);
+  g_object_addrs->RemoveObject(g_thread_to_be_destroyed);
+  // Oter le thread des différentes structures de données
+  // et le bloquer
+  this->Sleep();
+  g_machine->interrupt->SetStatus(oldLevel);
 }
 #endif
 //----------------------------------------------------------------------
@@ -409,14 +416,16 @@ Thread::SaveProcessorState()
 #endif
 #ifdef ETUDIANTS_TP
 void Thread::SaveProcessorState() {
-    // Sauvegarde les registres du processeur du thread dans son contexte
-    for (int i = 0; i < NUM_INT_REGS; ++i) {
-        thread_context.int_registers[i] = g_machine->ReadIntRegister(i);
-    }
-    for (int i = 0; i < NUM_FP_REGS; ++i) {
-        thread_context.float_registers[i] = g_machine->ReadFPRegister(i);
-    }
-    thread_context.pc = g_machine->pc;
+  IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF);    
+  // Sauvegarde les registres du processeur du thread dans son contexte
+  for (int i = 0; i < NUM_INT_REGS; ++i) {
+      thread_context.int_registers[i] = g_machine->ReadIntRegister(i);
+  }
+  for (int i = 0; i < NUM_FP_REGS; ++i) {
+      thread_context.float_registers[i] = g_machine->ReadFPRegister(i);
+  }
+  thread_context.pc = g_machine->pc;
+  g_machine->interrupt->SetStatus(oldLevel);
 }
 #endif
 //----------------------------------------------------------------------
@@ -438,6 +447,7 @@ Thread::RestoreProcessorState()
 #ifdef ETUDIANTS_TP
 void Thread::RestoreProcessorState() {
     // Restaure les registres du processeur du thread depuis son contexte
+    IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF);
     for (int i = 0; i < NUM_INT_REGS; ++i) {
         g_machine->WriteIntRegister(i, thread_context.int_registers[i]);
     }
@@ -445,6 +455,7 @@ void Thread::RestoreProcessorState() {
         g_machine->WriteFPRegister(i, thread_context.float_registers[i]);
     }
     g_machine->pc = thread_context.pc;
+    g_machine->interrupt->SetStatus(oldLevel);
 }
 #endif
 //----------------------------------------------------------------------
