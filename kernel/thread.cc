@@ -127,26 +127,38 @@ int Thread::Start(Process *owner, int64_t func, int64_t arg) {
   DEBUG('t', (char *)"Starting thread \"%s\"\n", name);
 
   ASSERT(process == NULL);
-  // Associer le thread au processus spécifié
-  IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF);    
+
+  // Désactiver les interruptions pendant l'initialisation du thread
+  IntStatus oldLevel = g_machine-> interrupt->SetStatus(INTERRUPTS_OFF); 
+
+  // Associer le thread au processus   
   process = owner;
   process->numThreads++;
-
+  
   // Initialiser tous les éléments du thread
   // Allouer une nouvelle pile pour le simulateur RISC-V
-  int8_t * stackBottom = (int8_t *) AllocBoundedArray(SIMULATORSTACKSIZE);
-  InitSimulatorContext(stackBottom, SIMULATORSTACKSIZE);
+  int8_t * riscvSimulatorStack = (int8_t *) AllocBoundedArray(SIMULATORSTACKSIZE);
+  if (!riscvSimulatorStack) {
+    // Échec de l'allocation de la pile pour le simulateur
+    printf("**** Error: Failed to allocate simulator stack\n");
+    g_machine->interrupt->SetStatus(oldLevel);
+    return OUT_OF_MEMORY;
+  }
+  InitSimulatorContext(riscvSimulatorStack, SIMULATORSTACKSIZE);
 
   // Allouer une nouvelle pile utilisateur
   int64_t stackSize = g_cfg->UserStackSize; // Taille de la pile utilisateur
-  int64_t *stack = (int64_t *) g_current_thread->GetProcessOwner()->addrspace->StackAllocate(); // Allocation de la pile utilisateur
-  if (!stack) {
-    // Échec de l'allocation de la pile
+  int64_t *userStack = (int64_t *) process->addrspace->StackAllocate(); // Allocation de la pile utilisateur
+  if (!userStack) {
+    // Échec de l'allocation de la pile utilisateur
+    printf("**** Error: Failed to allocate user stack\n");
+    DeallocBoundedArray(riscvSimulatorStack, SIMULATORSTACKSIZE);
+    g_machine->interrupt->SetStatus(oldLevel);
     return OUT_OF_MEMORY;
   }
 
   // Initialiser le contexte du thread
-  InitThreadContext(func, (int64_t) stack + stackSize, arg);
+  InitThreadContext(func, (int64_t) userStack, arg);
 
   // Marquer le thread comme prêt à être exécuté
   g_alive->Append(this);
