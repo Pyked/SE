@@ -133,12 +133,20 @@ int Thread::Start(Process *owner, int64_t func, int64_t arg) {
   process->numThreads++;
 
   // Initialiser tous les éléments du thread
-  // Allouer une nouvelle pile utilisateur et une nouvelle pile pour le simulateur RISC-V
+  // Allouer une nouvelle pile pour le simulateur RISC-V
   int8_t * stackBottom = (int8_t *) AllocBoundedArray(SIMULATORSTACKSIZE);
   InitSimulatorContext(stackBottom, SIMULATORSTACKSIZE);
 
-  // Initialiser le contenu du thread (contexte utilisateur et contexte du simulateur)
-  InitThreadContext(func, (int64_t) stackBottom + SIMULATORSTACKSIZE, arg);
+  // Allouer une nouvelle pile utilisateur
+  int64_t stackSize = g_cfg->UserStackSize; // Taille de la pile utilisateur
+  int64_t *stack = (int64_t *) g_current_thread->GetProcessOwner()->addrspace->StackAllocate(); // Allocation de la pile utilisateur
+  if (!stack) {
+    // Échec de l'allocation de la pile
+    return OUT_OF_MEMORY;
+  }
+
+  // Initialiser le contexte du thread
+  InitThreadContext(func, (int64_t) stack + stackSize, arg);
 
   // Marquer le thread comme prêt à être exécuté
   g_alive->Append(this);

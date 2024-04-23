@@ -2,6 +2,7 @@
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
         "*.java": "java",
-        "__config": "cpp"
+        "__config": "cpp",
+        "__locale": "cpp"
     }
 }
