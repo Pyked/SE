@@ -32,6 +32,9 @@
 #include "machine/ACIA.h"
 #include "drivers/drvACIA.h"
 
+/* Defines */
+#define ETUDIANTS_TP
+
 //-------------------------------------------------------------------------
 // DriverACIA::DriverACIA()
 /*! Constructor.
@@ -44,6 +47,7 @@
   */
 //-------------------------------------------------------------------------
 
+#ifndef ETUDIANTS_TP
 DriverACIA::DriverACIA()
 {
   printf("**** Warning: contructor of the ACIA driver not implemented yet\n");
@@ -51,6 +55,41 @@ DriverACIA::DriverACIA()
   exit(ERROR);
 
 }
+#endif
+
+#ifdef ETUDIANTS_TP
+// Constructor
+DriverACIA::DriverACIA() {
+  /* Je me demande si on doit vraiement initialiser les buffers et l'index d'envoi ici.
+  // Initialize send and receive buffers
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    send_buffer[i] = '\0';
+    receive_buffer[i] = '\0';
+  }
+  
+  // Initialize send buffers index
+  ind_send = 0;
+  */
+
+  // Check if the ACIA is in Interrupt mode or Busy Waiting mode
+  if (g_cfg->ACIA == ACIA_INTERRUPT) {
+    // initialize the reception index and semaphores and allow reception interrupts
+    ind_rec = 0;
+    send_sema = new Semaphore("send_sema", 1);
+    receive_sema = new Semaphore("receive_sema", 1);
+
+    // Enable ACIA reception interrupt
+    g_machine->acia->SetWorkingMode(REC_INTERRUPT);
+  } else if (g_cfg->ACIA == ACIA_BUSY_WAITING) {
+    // Initialize the ACIA working mode
+    g_machine->acia->SetWorkingMode(ACIA_BUSY_WAITING);
+    
+    // Initialize the semaphores
+    send_sema = new Semaphore("send_sema", 1);
+    receive_sema = new Semaphore("receive_sema", 1);
+  }
+}
+#endif
 
 //-------------------------------------------------------------------------
 // DriverACIA::TtySend(char* buff)
@@ -58,6 +97,7 @@ DriverACIA::DriverACIA()
  */
 //-------------------------------------------------------------------------
 
+#ifndef ETUDIANTS_TP
 int DriverACIA::TtySend(char *buff)
 {
   printf("**** Warning: method Tty_Send of the ACIA driver not implemented yet\n");
@@ -67,6 +107,34 @@ int DriverACIA::TtySend(char *buff)
   return 0;
 
 }
+#endif
+
+#ifdef ETUDIANTS_TP
+int DriverACIA::TtySend(char *buff) {
+  int sent_char = 0;
+  // Check the ACIA working mode
+  if (g_machine->acia->GetWorkingMode() == BUSY_WAITING) {
+    // Loop until the entire buffer is sent
+    while (buff[sent_char] != '\0') {
+      // Check is ACIA is ready to transmit
+      while (!g_machine->acia->GetOutputStateReg()) {}
+      // Sent a character and move to the next character
+      g_machine->acia->PutChar(buff[sent_char++]);
+    }
+  } else {
+    send_sema->P();
+    // In the Interrupt mode, send all the characters in the buffer
+    g_machine->acia->SetWorkingMode(SEND_INTERRUPT);
+    while (sent_char < strlen(buff)) {
+      send_buffer[ind_send] = buff[sent_char++];
+      InterruptSend();
+    }
+  }
+
+  // Return the number of characters sent
+  return sent_char; 
+}
+#endif
 
 //-------------------------------------------------------------------------
 // DriverACIA::TtyReceive(char* buff,int length)
@@ -75,6 +143,7 @@ int DriverACIA::TtySend(char *buff)
   */
 //-------------------------------------------------------------------------
 
+#ifndef ETUDIANTS_TP
 int DriverACIA::TtyReceive(char *buff, int lg)
 {
   printf("**** Warning: method Tty_Receive of the ACIA driver not implemented yet\n");
@@ -84,6 +153,36 @@ int DriverACIA::TtyReceive(char *buff, int lg)
   return 0;
 
 }
+#endif
+
+#ifdef ETUDIANTS_TP
+int DriverACIA::TtyReceive(char *buff, int lg) {
+  int received_char = 0;
+  if (g_machine->acia->GetWorkingMode() == BUSY_WAITING) {
+    while (received_char < lg) {
+      // wait until there are a characters to receive available in the input buffer
+      while (g_machine->acia->GetInputStateReg() == EMPTY) {}
+      // Receive a character from ACIA
+      buff[received_char++] = g_machine->acia->GetChar();
+      // Check if the end of the message is reached
+      if (buff[received_char - 1] == '\0') {
+        break;
+      }
+    }
+  } else {
+      // Wait until the semaphore is released
+      receive_sema->P();
+      // Copy the received character in the receive buffer to buff
+      while (received_char < lg) {
+        InterruptReceive();
+        buff[received_char++] = receive_buffer[ind_rec];
+      }
+    }
+  
+  // Return the number of characters received
+  return received_char;
+}
+#endif
 
 //-------------------------------------------------------------------------
 // DriverACIA::InterruptSend()
@@ -93,6 +192,7 @@ int DriverACIA::TtyReceive(char *buff, int lg)
   */
 //-------------------------------------------------------------------------
 
+#ifndef ETUDIANTS_TP
 void DriverACIA::InterruptSend()
 {
   printf("**** Warning: send interrupt handler not implemented yet\n");
@@ -100,6 +200,20 @@ void DriverACIA::InterruptSend()
   exit(ERROR);
 
 }
+#endif
+
+#ifdef ETUDIANTS_TP
+void DriverACIA::InterruptSend() {
+  // Check if there are more characters to send
+  if (send_buffer[ind_send] != '\0') {
+    // Send the next character
+    g_machine->acia->PutChar(send_buffer[ind_send++]);
+  } else {
+    // Release the send_sema semaphore
+    send_sema->V();
+  }
+}
+#endif
 
 //-------------------------------------------------------------------------
 // DriverACIA::Interrupt_receive()
@@ -111,6 +225,7 @@ void DriverACIA::InterruptSend()
   */
 //-------------------------------------------------------------------------
 
+#ifndef ETUDIANTS_TP
 void DriverACIA::InterruptReceive()
 {
   printf("**** Warning: receive interrupt handler not implemented yet\n");
@@ -118,3 +233,18 @@ void DriverACIA::InterruptReceive()
   exit(ERROR);
 
 }
+#endif
+
+#ifdef ETUDIANTS_TP
+void DriverACIA::InterruptReceive() {
+  // Receive a character from ACIA
+  char received_char = g_machine->acia->GetChar();
+  // Store the received character in the reception buffer
+  receive_buffer[ind_rec++] = received_char;
+  // Check if the end of the message is reached
+  if (received_char == '\0') {
+    // Release the receive_sema semaphore
+    receive_sema->V();
+  }
+}
+#endif

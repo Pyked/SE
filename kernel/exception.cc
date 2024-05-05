@@ -657,6 +657,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
       break;
     }
 
+
 #ifdef ETUDIANTS_TP
 
 case SC_SEM_CREATE: {

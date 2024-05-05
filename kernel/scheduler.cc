@@ -167,7 +167,7 @@ Scheduler::SwitchTo (Thread *nextThread) {
     	// kernelContext structure such that it goes on executing when
     	// it was last interrupted
     	nextThread->RestoreProcessorState();
-	nextThread->RestoreSimulatorState();
+	    nextThread->RestoreSimulatorState();
     }
 
     DEBUG('t', (char *)"Now in thread \"%s\" time %llu\n", g_current_thread->GetName(),g_stats->getTotalTicks());

@@ -283,8 +283,7 @@ void Condition::Wait() {
 #ifdef ETUDIANTS_TP
 void Condition::Wait() { 
   IntStatus oldLevel = g_machine->interrupt->SetStatus(INTERRUPTS_OFF); // Désactiver les interruptions
-  ASSERT(waiting_queue->IsEmpty());
-  waiting_queue->Append((void *)g_current_thread); // Mettre le thread courant en attente
+  waiting_queue->Append((void *)g_current_thread);
   g_current_thread->Sleep(); // Mettre le thread courant en attente
   (void) g_machine->interrupt->SetStatus(oldLevel); // Restaurer l'état des interruptions
 }

@@ -133,7 +133,6 @@ int Thread::Start(Process *owner, int64_t func, int64_t arg) {
 
   // Associer le thread au processus   
   process = owner;
-  process->numThreads++;
   
   // Initialiser tous les éléments du thread
   // Allouer une nouvelle pile pour le simulateur RISC-V
@@ -159,6 +158,8 @@ int Thread::Start(Process *owner, int64_t func, int64_t arg) {
 
   // Initialiser le contexte du thread
   InitThreadContext(func, (int64_t) userStack, arg);
+  
+  process->numThreads++;
 
   // Marquer le thread comme prêt à être exécuté
   g_alive->Append(this);
